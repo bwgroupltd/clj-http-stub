@@ -2,7 +2,7 @@
   (:require [clj-http.client :as http]
             [clj-http.core :as core]
             [clj-http.util :as util])
-  (:use [clj-http.clj_stub]
+  (:use [clj-http.stub]
         [clojure.test]
         :reload-all)
   (:import (java.net ConnectException)))

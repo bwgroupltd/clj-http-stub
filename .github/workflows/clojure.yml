@@ -10,10 +10,6 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
-    strategy:
-      matrix:
-        test-command: ['test-2.x', 'test-3.x']
-
     steps:
     - uses: actions/checkout@v4.2.2
     
@@ -21,7 +17,7 @@ jobs:
       uses: actions/setup-java@v4.5.0
       with:
         distribution: 'temurin'
-        java-version: '11'
+        java-version: '17'
         
     - name: Install Leiningen
       uses: DeLaGuardo/setup-clojure@12.6
@@ -36,4 +32,4 @@ jobs:
         restore-keys: ${{ runner.os }}-m2
 
     - name: Run tests
-      run: lein ${{ matrix.test-command }}
+      run: lein test-lat

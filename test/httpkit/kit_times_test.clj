@@ -1,7 +1,7 @@
 (ns httpkit.kit-times-test
   (:use clojure.test)
   (:require [org.httpkit.client :as http]
-            [httpkit.kit_stub :refer :all]
+            [httpkit.stub :refer :all]
             [stub.shared :refer [*call-counts* *expected-counts*]]))
 
 (deftest test-times-verification

@@ -1,4 +1,4 @@
-(ns httpkit.kit_stub
+(ns httpkit.stub
   (:import [java.util.regex Pattern])
   (:require [org.httpkit.client :as http]
             [clojure.math.combinatorics :refer :all]

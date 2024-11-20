@@ -1,4 +1,4 @@
-(defproject org.clojars.bigsy/clj-http-stub "0.0.1"
+(defproject org.clojars.bigsy/clj-http-stub "0.0.2"
   :description "Helper for faking clj-http and http-kit requests in testing"
   :url "https://github.com/Bigsy/clj-http-stub"
   :license {:name "MIT License"
@@ -10,11 +10,12 @@
                  [clj-http "3.13.0"]
                  [http-kit "2.8.0"]
                  [ring/ring-codec "1.2.0"]]
-  :aliases {"test-3.x" ["with-profile" "clj-3.x,1.10:clj-3.x,1.11:clj-3.x,1.12" "test"]}
+  :aliases {"test-lat" ["with-profile" "clj-lat,1.10:clj-lat,1.11:clj-lat,1.12" "test"]}
   :profiles {:dev {:dependencies [[org.clojure/clojure "1.12.0"]
                                  [hashp "0.2.2"]]}
              :1.12 {:dependencies [[org.clojure/clojure "1.12.0"]]}
              :1.11 {:dependencies [[org.clojure/clojure "1.11.4"]]}
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]]}
 
-             :clj-3.x {:dependencies [[clj-http "3.13.0"]]}})
+             :clj-lat {:dependencies [[clj-http "3.13.0"]
+                                      [http-kit "2.8.0"]]}})

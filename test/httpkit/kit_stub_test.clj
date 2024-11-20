@@ -1,6 +1,6 @@
 (ns httpkit.kit-stub-test
   (:require [clojure.test :refer :all]
-            [httpkit.kit_stub :refer :all]
+            [httpkit.stub :refer :all]
             [stub.shared :refer [*call-counts*]]
             [org.httpkit.client :as http]))
 

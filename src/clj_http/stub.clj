@@ -1,4 +1,4 @@
-(ns clj-http.clj_stub
+(ns clj-http.stub
   (:import [java.util.regex Pattern]
            [java.util Map])
   (:require [clj-http.core]
