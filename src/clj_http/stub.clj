@@ -1,9 +1,10 @@
 (ns clj-http.stub
   (:require [clj-http.core]
-            [stub.shared :as shared])
-  (:use [robert.hooke]
-        [clojure.math.combinatorics]
-        [clojure.string :only [join split]]))
+            [stub.shared :as shared]
+            [robert.hooke :refer [add-hook]]
+            [clojure.math.combinatorics :as combo]
+            [clojure.string :refer [join split]])
+  (:import (java.nio.charset StandardCharsets)))
 
 (defmacro with-http-stub
   [routes & body]
@@ -24,9 +25,9 @@
      (with-global-http-stub ~routes ~@body)))
 
 (defn utf8-bytes
-    "Returns the UTF-8 bytes corresponding to the given string."
-    [^String s]
-    (.getBytes s "UTF-8"))
+  "Returns the UTF-8 bytes corresponding to the given string."
+  ^bytes [^String s]
+  (.getBytes s StandardCharsets/UTF_8))
 
 (defn- byte-array?
   "Is `obj` a java byte array?"
@@ -42,43 +43,32 @@
 
 (defn- process-handler [method address handler]
   (let [route-key (str address method)]
-    (cond
-      ;; Handler is a function with times metadata
-      (and (fn? handler) (:times (meta handler)))
-      (do
-        (swap! shared/*expected-counts* assoc route-key (:times (meta handler)))
+    (if (fn? handler)
+      (if-let [times (:times (meta handler))]
+        (do
+          (swap! shared/*expected-counts* assoc route-key times)
+          [method address {:handler handler}])
         [method address {:handler handler}])
-
-      ;; Handler is a map with :handler and :times
-      (and (map? handler) (:handler handler))
-      (do
-        (when-let [times (:times handler)]
-          (swap! shared/*expected-counts* assoc route-key times))
-        [method address {:handler (:handler handler)}])
-
-      ;; Handler is a direct function
-      :else
-      [method address {:handler handler}])))
+      (if (map? handler)
+        (do
+          (when-let [times (:times handler)]
+            (swap! shared/*expected-counts* assoc route-key times))
+          [method address {:handler (:handler handler)}])
+        [method address {:handler handler}]))))
 
 (defn- flatten-routes [routes]
-  (let [normalised-routes
-        (reduce
-         (fn [accumulator [address handlers]]
-           (if (map? handlers)
-             (into accumulator 
-                   (map (fn [[method handler]]
-                         (if (= method :times)
-                           nil
+  (->> routes
+       (mapcat (fn [[address handlers]]
+                (if (map? handlers)
+                  (keep (fn [[method handler]]
+                         (when-not (= method :times)
                            (let [times (get-in handlers [:times method] (:times handlers))]
                              (process-handler method address 
-                                            (if times
-                                              (with-meta handler {:times times})
-                                              handler)))))
-                       (dissoc handlers :times)))
-             (into accumulator [[:any address {:handler handlers}]])))
-         []
-         routes)]
-    (remove nil? (map #(zipmap [:method :address :handler] %) normalised-routes))))
+                                            (cond-> handler
+                                              times (with-meta {:times times}))))))
+                       (dissoc handlers :times))
+                  [[:any address {:handler handlers}]])))
+       (map #(zipmap [:method :address :handler] %))))
 
 (defn- get-matching-route
   [request]
