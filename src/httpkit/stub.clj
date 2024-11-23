@@ -1,5 +1,4 @@
 (ns httpkit.stub
-  (:import [java.util.regex Pattern])
   (:require [org.httpkit.client :as http]
             [clojure.math.combinatorics :refer :all]
             [stub.shared :as shared]))
@@ -41,56 +40,23 @@
         response-promise))))
 
 (defmacro with-http-stub
-  "Makes all wrapped http-kit requests first match against given routes.
-   Routes should be in the format:
-   {\"http://example.com\" 
-    {:get (fn [req] {:status 200})
-     :post (fn [req] {:status 201})
-     :any (fn [req] {:status 200})
-     :times 2}}  ; New :times support"
   [routes & body]
-  `(let [s# ~routes]
-     (assert (map? s#))
-     (binding [shared/*stub-routes* s#
-               shared/*call-counts* (atom {})
-               shared/*expected-counts* (atom {})]
-       (with-redefs [http/request (wrap-request-with-stub http/request)]
-         (try
-           (let [result# (do ~@body)]
-             (shared/validate-all-call-counts)
-             result#)
-           (finally
-             (reset! shared/*call-counts* {})
-             (reset! shared/*expected-counts* {})))))))
+  `(with-redefs [http/request (wrap-request-with-stub http/request)]
+     (shared/with-stub-bindings ~routes (fn [] ~@body))))
 
 (defmacro with-http-stub-in-isolation
-  "Makes all wrapped http-kit requests first match against given routes.
-   If no route matches, an exception is thrown."
   [routes & body]
   `(binding [shared/*in-isolation* true]
      (with-http-stub ~routes ~@body)))
 
 (defmacro with-global-http-stub
-  "Makes all wrapped http-kit requests first match against given routes.
-   The actual HTTP request will be sent only if no matches are found."
   [routes & body]
-  `(let [s# ~routes]
-     (assert (map? s#))
-     (with-redefs [shared/*stub-routes* s#
-                   shared/*call-counts* (atom {})
-                   shared/*expected-counts* (atom {})
-                   http/request (wrap-request-with-stub http/request)]
-       (try
-         (let [result# (do ~@body)]
-           (shared/validate-all-call-counts)
-           result#)
-         (finally
-           (reset! shared/*call-counts* {})
-           (reset! shared/*expected-counts* {}))))))
+  `(shared/with-global-http-stub-base ~routes
+     (with-redefs [http/request (wrap-request-with-stub http/request)]
+       ~@body)
+     ~@body))
 
 (defmacro with-global-http-stub-in-isolation
-  "Makes all wrapped http-kit requests first match against given routes.
-   If no route matches, an exception is thrown."
   [routes & body]
   `(with-redefs [shared/*in-isolation* true]
      (with-global-http-stub ~routes ~@body)))

@@ -1,6 +1,4 @@
 (ns clj-http.stub
-  (:import [java.util.regex Pattern]
-           [java.util Map])
   (:require [clj-http.core]
             [stub.shared :as shared])
   (:use [robert.hooke]
@@ -8,51 +6,22 @@
         [clojure.string :only [join split]]))
 
 (defmacro with-http-stub
-  "Makes all wrapped clj-http requests first match against given routes.
-  The actual HTTP request will be sent only if no matches are found."
   [routes & body]
-  `(let [s# ~routes]
-    (assert (map? s#))
-    (binding [shared/*stub-routes* s#
-              shared/*call-counts* (atom {})
-              shared/*expected-counts* (atom {})]
-      (try
-        (let [result# (do ~@body)]
-          (shared/validate-all-call-counts)
-          result#)
-        (finally
-          (reset! shared/*call-counts* {})
-          (reset! shared/*expected-counts* {}))))))
+  `(shared/with-stub-bindings ~routes (fn [] ~@body)))
 
 (defmacro with-http-stub-in-isolation
-  "Makes all wrapped clj-http requests first match against given routes.
-  If no route matches, an exception is thrown."
   [routes & body]
   `(binding [shared/*in-isolation* true]
      (with-http-stub ~routes ~@body)))
 
 (defmacro with-global-http-stub
   [routes & body]
-  `(let [s# ~routes]
-     (assert (map? s#))
-     (with-redefs [shared/*stub-routes* s#
-                   shared/*call-counts* (atom {})
-                   shared/*expected-counts* (atom {})]
-       (try
-         (let [result# (do ~@body)]
-           (shared/validate-all-call-counts)
-           result#)
-         (finally
-           (reset! shared/*call-counts* {})
-           (reset! shared/*expected-counts* {}))))))
+  `(shared/with-global-http-stub-base ~routes (do ~@body)))
 
 (defmacro with-global-http-stub-in-isolation
   [routes & body]
   `(with-redefs [shared/*in-isolation* true]
      (with-global-http-stub ~routes ~@body)))
-
-(defn- potential-uris-for [request-map]
-  (shared/defaults-or-value #{"/" "" nil} (:uri request-map)))
 
 (defn utf8-bytes
     "Returns the UTF-8 bytes corresponding to the given string."
