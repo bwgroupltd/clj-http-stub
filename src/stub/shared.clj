@@ -1,5 +1,7 @@
 (ns stub.shared
-  (:import [org.apache.http HttpEntity])
+  (:import [org.apache.http HttpEntity]
+           [java.util.regex Pattern]
+           [java.util Map])
   (:require [clojure.math.combinatorics :refer [cartesian-product permutations]]
             [clojure.string :as str]
             [ring.util.codec :as ring-codec]))
@@ -107,6 +109,12 @@
       (map (partial str/join "&") (permutations (str/split (first queries) #"&|;")))
       queries)))
 
+(defn potential-uris-for
+  "Returns a set of potential URIs for a request.
+   Uses defaults-or-value to handle common cases like '/', '', or nil."
+  [request-map]
+  (defaults-or-value #{"/" "" nil} (:uri request-map)))
+
 (defn potential-alternatives-to
   "Given a request map and a function to generate potential URIs,
    returns a sequence of all possible alternative request maps
@@ -133,6 +141,19 @@
   [url]
   (str/replace url #"/+$" ""))
 
+(defn get-request-method
+  "Gets the request method from either http-kit (:method) or clj-http (:request-method) style requests"
+  [request]
+  (or (:method request)
+      (:request-method request)))
+
+(defn methods-match?
+  "Checks if a request method matches an expected method.
+   Handles :any as a wildcard method."
+  [expected-method request]
+  (let [request-method (get-request-method request)]
+    (contains? (set (distinct [:any request-method])) expected-method)))
+
 (defn address-string-for
   "Converts a request map into a URL string.
    Handles both keyword (:http) and string ('http') schemes.
@@ -151,18 +172,29 @@
                (when-not (nil? uri) uri)
                (when-not (nil? query-str) (str "?" query-str))])))
 
-(defn get-request-method
-  "Gets the request method from either http-kit (:method) or clj-http (:request-method) style requests"
-  [request]
-  (or (:method request)
-      (:request-method request)))
+(defprotocol RouteMatcher
+  (matches [address method request]))
 
-(defn methods-match?
-  "Checks if a request method matches an expected method.
-   Handles :any as a wildcard method."
-  [expected-method request]
-  (let [request-method (get-request-method request)]
-    (contains? (set (distinct [:any request-method])) expected-method)))
+(extend-protocol RouteMatcher
+  String
+  (matches [address method request]
+    (matches (re-pattern (Pattern/quote address)) method request))
+
+  Pattern
+  (matches [address method request]
+    (let [address-strings (map address-string-for (potential-alternatives-to request potential-uris-for))
+          request-url (or (:url request) (address-string-for request))]
+      (and (methods-match? method request)
+           (or (re-matches address request-url)
+               (some #(re-matches address %) address-strings)))))
+
+  Map
+  (matches [address method request]
+    (let [{expected-query-params :query-params} address]
+      (and (or (nil? expected-query-params)
+               (query-params-match? expected-query-params request))
+           (let [request (cond-> request expected-query-params (dissoc :query-string))]
+             (matches (:address address) method request))))))
 
 (defn create-response
   "Creates a response map with default values merged with the provided response.
@@ -181,7 +213,8 @@
    - Converts string URLs to request maps
    - Sets default method to :get
    - Handles HttpEntity bodies
-   - Ensures consistent method key (:method or :request-method)"
+   - Ensures consistent method key (:method or :request-method)
+   - Handles both httpkit and clj-http request formats"
   [request]
   (let [req (cond
               ;; Handle string URLs
@@ -193,6 +226,10 @@
               (assoc request :body (.getContent ^HttpEntity (:body request)))
               
               :else request)
+        ;; Parse URL if it's a string
+        req (if (string? (:url req))
+             (merge req (parse-url (:url req)))
+             req)
         ;; Ensure we have a method (default to :get)
         req (merge {:method :get} req)
         ;; Normalize method keys

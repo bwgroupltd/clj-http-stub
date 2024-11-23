@@ -54,9 +54,6 @@
 (defn- potential-uris-for [request-map]
   (shared/defaults-or-value #{"/" "" nil} (:uri request-map)))
 
-(defprotocol RouteMatcher
-  (matches [address method request]))
-
 (defn utf8-bytes
     "Returns the UTF-8 bytes corresponding to the given string."
     [^String s]
@@ -73,25 +70,6 @@
   (if (byte-array? obj)
     obj
     (utf8-bytes obj)))
-
-(extend-protocol RouteMatcher
-  String
-  (matches [address method request]
-    (matches (re-pattern (Pattern/quote address)) method request))
-
-  Pattern
-  (matches [address method request]
-    (let [address-strings (map shared/address-string-for (shared/potential-alternatives-to request potential-uris-for))]
-      (and (shared/methods-match? method request)
-           (some #(re-matches address %) address-strings))))
-
-  Map
-  (matches [address method request]
-    (let [{expected-query-params :query-params} address]
-      (and (or (nil? expected-query-params)
-               (shared/query-params-match? expected-query-params request))
-           (let [request (cond-> request expected-query-params (dissoc :query-string))]
-             (matches (:address address) method request))))))
 
 (defn- process-handler [method address handler]
   (let [route-key (str address method)]
@@ -137,7 +115,7 @@
   [request]
   (->> shared/*stub-routes*
        flatten-routes
-       (filter #(matches (:address %) (:method %) request))
+       (filter #(shared/matches (:address %) (:method %) request))
        first))
 
 (defn- handle-request-for-route
@@ -147,7 +125,7 @@
         route-key (str (:address route) (:method route))
         _ (swap! shared/*call-counts* update route-key (fnil inc 0))
         response (shared/create-response handler-fn (shared/normalize-request request))]
-    (assoc response :body (body-bytes (:body response)))))
+    (update response :body body-bytes)))
 
 (defn- throw-no-stub-route-exception
   [request]

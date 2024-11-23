@@ -4,27 +4,16 @@
             [clojure.math.combinatorics :refer :all]
             [stub.shared :as shared]))
 
-(defn- matches-url [url request]
-  (let [parsed-url (if (string? url) (shared/parse-url url) url)
-        req-map (shared/parse-url (:url request))
-        req-str (shared/normalize-url-for-matching (shared/address-string-for req-map))]
-    (cond
-      (instance? Pattern url) 
-      (re-matches url req-str)
-      :else 
-      (= (shared/normalize-url-for-matching (shared/address-string-for parsed-url))
-         req-str))))
-
 (defn- find-matching-route [routes request]
   (first
     (for [[url handlers] routes
-          :when (matches-url url request)
+          :when (shared/matches url (:method request) request)
           :let [method (:method request)
                 handler (or (get handlers method)
                           (get handlers :any))
                 times (or (get-in handlers [:times method])  ; Get method-specific times
                          (:times handlers))]                 ; Or global times
-          :when (and handler (shared/methods-match? method request))]
+          :when handler]
       [url (fn [req] 
             ;; Set up expected counts if :times is specified
             (when times
