@@ -1,6 +1,5 @@
 (ns clj-http.test.clj_stub_test
   (:require [clj-http.client :as http]
-            [clj-http.core :as core]
             [clj-http.util :as util])
   (:use [clj-http.stub]
         [clojure.test]
@@ -113,21 +112,16 @@
   (with-redefs [clj-http.core/request
                 (fn [req]
                   {:status 200 :headers {} :body (util/utf8-bytes "zgBOaC")})]
-    (initialize-request-hook)
     (with-http-stub
       {"http://idontmatch.com" (fn [req] {:status 200 :headers {} :body "wp8gJf"})}
       (is (= (:body (http/get "http://somerandomhost.org")) "zgBOaC")))))
 
 (deftest throws-exception-if-in-isolation-mode-and-no-matching-route
-  (with-redefs [clj-http.core/request
-                (fn [req]
-                  {:status 200 :headers {} :body (util/utf8-bytes "1Z6xAB")})]
-    (initialize-request-hook)
-    (with-http-stub-in-isolation
-      {"http://idontmatch.com"
-       (fn [req]
-         {:status 200 :headers {} :body "lL4QSc"})}
-      (is (thrown? Exception (http/get "http://somerandomhost.org"))))))
+  (with-http-stub-in-isolation
+    {"http://idontmatch.com"
+     (fn [req]
+       {:status 200 :headers {} :body "lL4QSc"})}
+    (is (thrown? Exception (http/get "http://somerandomhost.org")))))
 
 (defmacro other-thread
   "Mostly like future but fails to preserve thread-local bindings."
