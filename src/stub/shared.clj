@@ -196,6 +196,32 @@
            (let [request (cond-> request expected-query-params (dissoc :query-string))]
              (matches (:address address) method request))))))
 
+(defn validate-all-call-counts []
+  (doseq [[route-key expected-count] @*expected-counts*]
+    (let [actual-count (get @*call-counts* route-key 0)]
+      (when (not= actual-count expected-count)
+        (throw (Exception. (format "Expected route '%s' to be called %d times but was called %d times"
+                                   route-key expected-count actual-count)))))))
+
+(defn with-stub-bindings
+  "Helper function to handle common stubbing logic across different stub macros.
+   Takes a routes map and a body function, sets up the necessary bindings,
+   executes the body, and ensures proper cleanup."
+  [routes body-fn]
+  (assert (map? routes))
+  (let [call-counts (atom {})
+        expected-counts (atom {})]
+    (try
+      (binding [*stub-routes* routes
+                *call-counts* call-counts
+                *expected-counts* expected-counts]
+        (let [result (body-fn)]
+          (validate-all-call-counts)
+          result))
+      (finally
+        (reset! call-counts {})
+        (reset! expected-counts {})))))
+
 (defmacro with-global-http-stub-base
   "Base implementation of with-global-http-stub that both clj-http and httpkit extend"
   [routes wrap-body & body]
@@ -248,28 +274,5 @@
            :method method
            :request-method method)))
 
-(defn validate-all-call-counts []
-  (doseq [[route-key expected-count] @*expected-counts*]
-    (let [actual-count (get @*call-counts* route-key 0)]
-      (when (not= actual-count expected-count)
-        (throw (Exception. (format "Expected route '%s' to be called %d times but was called %d times"
-                                 route-key expected-count actual-count)))))))
 
-(defn with-stub-bindings
-  "Helper function to handle common stubbing logic across different stub macros.
-   Takes a routes map and a body function, sets up the necessary bindings,
-   executes the body, and ensures proper cleanup."
-  [routes body-fn]
-  (assert (map? routes))
-  (let [call-counts (atom {})
-        expected-counts (atom {})]
-    (try
-      (binding [*stub-routes* routes
-                *call-counts* call-counts
-                *expected-counts* expected-counts]
-        (let [result (body-fn)]
-          (validate-all-call-counts)
-          result))
-      (finally
-        (reset! call-counts {})
-        (reset! expected-counts {})))))
+
