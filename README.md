@@ -39,51 +39,50 @@ The API is identical for both clj-http and http-kit, with the only difference be
 ```clojure
 ;; With clj-http:
 (with-http-stub
-  {"http://api.example.com/data"
-   (fn [request] {:status 200 :headers {} :body "Hello World"})}
-  (c/get "http://api.example.com/data"))
+  {"https://api.weather.com/v1/current"
+   (fn [request] {:status 200 :headers {} :body "Sunny, 72°F"})}
+  (c/get "https://api.weather.com/v1/current"))
 
 ;; With http-kit:
 (with-http-stub
-  {"http://api.example.com/data"
-   (fn [request] {:status 200 :headers {} :body "Hello World"})}
-  @(http/get "http://api.example.com/data"))
+  {"https://api.weather.com/v1/current"
+   (fn [request] {:status 200 :headers {} :body "Sunny, 72°F"})}
+  @(http/get "https://api.weather.com/v1/current"))
 
 ;; Route matching examples (works the same for both clients):
 (with-http-stub
   {;; Exact string match:
-   "http://google.com/apps"
-   (fn [request] {:status 200 :headers {} :body "Hey, do I look like Google.com?"})
+   "https://api.github.com/users/octocat"
+   (fn [request] {:status 200 :headers {} :body "{\"name\": \"The Octocat\"}"})
 
    ;; Exact string match with query params:
-   "http://google.com/?query=param"
-   (fn [request] {:status 200 :headers {} :body "Nah, that can't be Google!"})
+   "https://api.spotify.com/v1/search?q=beethoven&type=track"
+   (fn [request] {:status 200 :headers {} :body "{\"tracks\": [...]}"})
 
    ;; Regexp match:
-   #"https://([a-z]+).packett.cool"
-   (fn [req] {:status 200 :headers {} :body "Hello world"})
+   #"https://([a-z]+).stripe.com/v1/customers"
+   (fn [req] {:status 200 :headers {} :body "{\"customer\": \"cus_123\"}"})
 
    ;; Match based on HTTP method:
-   "http://shmoogle.com/"
-   {:get (fn [req] {:status 200 :headers {} :body "What is Scmoogle anyways?"})}
+   "https://api.slack.com/api/chat.postMessage"
+   {:post (fn [req] {:status 200 :headers {} :body "{\"ok\": true}"})}
 
    ;; Match multiple HTTP methods:
-   "http://doogle.com/"
-   {:get    (fn [req] {:status 200 :headers {} :body "Nah, that can't be Google!"})
-    :delete (fn [req] {:status 401 :headers {} :body "Do you think you can delete me?!"})
-    :any    (fn [req] {:status 200 :headers {} :body "Matches any method"})}
+   "https://api.dropbox.com/2/files"
+   {:get    (fn [req] {:status 200 :headers {} :body "{\"entries\": [...]}"})
+    :delete (fn [req] {:status 401 :headers {} :body "{\"error\": \"Unauthorized\"}"})
+    :any    (fn [req] {:status 200 :headers {} :body "{\"status\": \"success\"}"})}
 
    ;; Match using query params as a map
-   {:address "http://google.com/search" :query-params {:q "aardark"}}
-   (fn [req] {:status 200 :headers {} :body "Searches have results"})
+   {:address "https://api.openai.com/v1/chat/completions" :query-params {:model "gpt-4"}}
+   (fn [req] {:status 200 :headers {} :body "{\"choices\": [...]}"})
 
    ;; If not given, the stub response status will be 200 and the body will be "".
-   "https://duckduckgo.com/?q=ponies"
+   "https://api.twilio.com/2010-04-01/Messages"
    (constantly {})}
 
  ;; Your tests with requests here
  )
-```
 
 ### Call Count Validation
 
@@ -95,32 +94,32 @@ The `:times` option can be specified as a sibling of the HTTP methods:
 ```clojure
 ;; With clj-http:
 (with-http-stub
-  {"http://api.example.com/data"
+  {"https://api.example.com/data"
    {:get (fn [_] {:status 200 :body "ok"})
     :times 2}}
   
   ;; This will pass - route is called exactly twice as expected
-  (c/get "http://api.example.com/data")
-  (c/get "http://api.example.com/data"))
+  (c/get "https://api.example.com/data")
+  (c/get "https://api.example.com/data"))
 
 ;; With http-kit:
 (with-http-stub
-  {"http://api.example.com/data"
+  {"https://api.example.com/data"
    {:get (fn [_] {:status 200 :body "ok"})
     :times 2}}
   
   ;; This will pass - route is called exactly twice as expected
-  @(http/get "http://api.example.com/data")
-  @(http/get "http://api.example.com/data"))
+  @(http/get "https://api.example.com/data")
+  @(http/get "https://api.example.com/data"))
 
 ;; Multiple methods with shared count
 (with-http-stub
-  {"http://api.example.com/data"
+  {"https://api.example.com/data"
    {:get (fn [_] {:status 200 :body "ok"})
     :post (fn [_] {:status 201 :body "created"})
     :times 1}}
-  (c/get "http://api.example.com/data")
-  (c/post "http://api.example.com/data"))
+  (c/get "https://api.example.com/data")
+  (c/post "https://api.example.com/data"))
 ```
 
 #### Per-Method Format
@@ -128,15 +127,15 @@ For more granular control, `:times` can be a map specifying counts per HTTP meth
 
 ```clojure
 (with-http-stub
-  {"http://api.example.com/data"
+  {"https://api.example.com/data"
    {:get (fn [_] {:status 200 :body "ok"})
     :post (fn [_] {:status 201 :body "created"})
     :times {:get 2 :post 1}}}
   
   ;; This will pass - GET called twice, POST called once
-  (c/get "http://api.example.com/data")
-  (c/get "http://api.example.com/data")
-  (c/post "http://api.example.com/data"))
+  (c/get "https://api.example.com/data")
+  (c/get "https://api.example.com/data")
+  (c/post "https://api.example.com/data"))
 ```
 
 The `:times` option allows you to:
@@ -178,4 +177,3 @@ The library provides the following URL matching capabilities:
    "http://example.com/api?a=1&b=2"
    "http://example.com/api?b=2&a=1"
    ```
-
