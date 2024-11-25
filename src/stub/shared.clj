@@ -58,27 +58,27 @@
         expected-query-params (normalize-query-params expected-query-params)]
     (and (= (count expected-query-params) (count actual-query-params))
          (every? (fn [[k v]]
-                  (= v (get actual-query-params k)))
-                expected-query-params))))
+                   (= v (get actual-query-params k)))
+                 expected-query-params))))
 
-(defn parse-url 
+(defn parse-url
   "Parse a URL string into a map containing :scheme, :server-name, :server-port, :uri, and :query-string"
   [url]
   (let [[url query] (str/split url #"\?" 2)
         [scheme rest] (if (str/includes? url "://")
-                       (str/split url #"://" 2)
-                       [nil url])
+                        (str/split url #"://" 2)
+                        [nil url])
         [server-name path] (if (str/includes? rest "/")
-                           (let [idx (str/index-of rest "/")]
-                             [(subs rest 0 idx) (subs rest idx)])
-                           [rest "/"])
+                             (let [idx (str/index-of rest "/")]
+                               [(subs rest 0 idx) (subs rest idx)])
+                             [rest "/"])
         [server-name port] (if (str/includes? server-name ":")
-                           (str/split server-name #":" 2)
-                           [server-name nil])]
-    {:scheme scheme
-     :server-name server-name
-     :server-port (when port (Integer/parseInt port))
-     :uri (normalize-path path)
+                             (str/split server-name #":" 2)
+                             [server-name nil])]
+    {:scheme       scheme
+     :server-name  server-name
+     :server-port  (when port (Integer/parseInt port))
+     :uri          (normalize-path path)
      :query-string query}))
 
 (defn potential-server-ports-for
@@ -129,10 +129,10 @@
         uris (uris-fn request)
         query-params (:query-params request)
         query-string (when query-params
-                      (ring-codec/form-encode query-params))
+                       (ring-codec/form-encode query-params))
         query-strings (if query-string
-                       [query-string]
-                       (potential-query-strings-for request))
+                        [query-string]
+                        (potential-query-strings-for request))
         combinations (cartesian-product query-strings schemes server-ports uris)]
     (map #(merge request (zipmap [:query-string :scheme :server-port :uri] %)) combinations)))
 
@@ -162,10 +162,10 @@
   [request-map]
   (let [{:keys [scheme server-name server-port uri query-string query-params]} request-map
         scheme-str (when-not (nil? scheme)
-                    (str (if (keyword? scheme) (name scheme) scheme) "://"))
+                     (str (if (keyword? scheme) (name scheme) scheme) "://"))
         query-str (or query-string
-                     (when query-params
-                       (ring-codec/form-encode query-params)))]
+                      (when query-params
+                        (ring-codec/form-encode query-params)))]
     (str/join [scheme-str
                server-name
                (when-not (nil? server-port) (str ":" server-port))
@@ -237,9 +237,9 @@
    If response is a function, it will be called with the request as an argument.
    Returns a map with :status, :headers, and :body."
   [response request]
-  (merge {:status 200
+  (merge {:status  200
           :headers {}
-          :body ""}
+          :body    ""}
          (if (fn? response)
            (response request)
            response)))
@@ -254,25 +254,25 @@
   [request]
   (let [req (cond
               ;; Handle string URLs
-              (string? request) 
+              (string? request)
               {:url request}
-              
+
               ;; Handle HttpEntity bodies
               (and (:body request) (instance? HttpEntity (:body request)))
               (assoc request :body (.getContent ^HttpEntity (:body request)))
-              
+
               :else request)
         ;; Parse URL if it's a string
         req (if (string? (:url req))
-             (merge req (parse-url (:url req)))
-             req)
+              (merge req (parse-url (:url req)))
+              req)
         ;; Ensure we have a method (default to :get)
         req (merge {:method :get} req)
         ;; Normalize method keys
         method (or (:method req) (:request-method req))]
-    (assoc req 
-           :method method
-           :request-method method)))
+    (assoc req
+      :method method
+      :request-method method)))
 
 
 

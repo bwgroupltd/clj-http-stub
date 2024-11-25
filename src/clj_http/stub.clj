@@ -1,9 +1,7 @@
 (ns clj-http.stub
   (:require [clj-http.core]
             [stub.shared :as shared]
-            [robert.hooke :refer [add-hook]]
-            [clojure.math.combinatorics :as combo]
-            [clojure.string :refer [join split]])
+            [robert.hooke :refer [add-hook]])
   (:import (java.nio.charset StandardCharsets)))
 
 (defmacro with-http-stub

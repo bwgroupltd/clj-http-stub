@@ -1,4 +1,4 @@
-(defproject org.clojars.bigsy/clj-http-stub "0.0.2"
+(defproject org.clojars.bigsy/clj-http-stub "0.0.3"
   :description "Helper for faking clj-http and http-kit requests in testing"
   :url "https://github.com/Bigsy/clj-http-stub"
   :license {:name "MIT License"
