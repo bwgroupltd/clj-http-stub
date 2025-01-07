@@ -83,7 +83,7 @@ The API is identical for both clj-http and http-kit, with the only difference be
 
  ;; Your tests with requests here
  )
-
+```
 ### Call Count Validation
 
 You can specify and validate the number of times a route should be called using the `:times` option. There are two supported formats:
