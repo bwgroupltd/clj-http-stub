@@ -1,6 +1,5 @@
 # clj-http-stub 
 [![MIT License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat)](https://www.tldrlegal.com/l/mit) 
-[![Clojars Project](https://img.shields.io/clojars/v/org.clojars.bigsy/clj-http-stub.svg)](https://clojars.org/org.clojars.bigsy/clj-http-stub)
 
 This is a library for stubbing out HTTP requests in Clojure. It supports both clj-http and http-kit clients with a consistent API. Includes both global and localised stubbing options for different testing scenarios. Stubbing can be isolated to specific test blocks to prevent unintended side effects.
 

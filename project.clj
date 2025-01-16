@@ -1,6 +1,6 @@
-(defproject org.clojars.bigsy/clj-http-stub "0.0.3"
+(defproject audiogum/clj-http-stub "0.0.3-SNAPSHOT"
   :description "Helper for faking clj-http and http-kit requests in testing"
-  :url "https://github.com/Bigsy/clj-http-stub"
+  :url "https://github.com/bwgroupltd/clj-http-stub"
   :license {:name "MIT License"
             :url  "http://www.opensource.org/licenses/mit-license.php"
             :distribution :repo}
@@ -18,4 +18,19 @@
              :1.10 {:dependencies [[org.clojure/clojure "1.10.3"]]}
 
              :clj-lat {:dependencies [[clj-http "3.13.0"]
-                                      [http-kit "2.8.0"]]}})
+                                      [http-kit "2.8.0"]]}}
+  :release-tasks  [["vcs" "assert-committed"]
+                   ["change" "version" "leiningen.release/bump-version" "release"]
+                   ["vcs" "commit"]
+                   ["vcs" "tag" "--no-sign"]
+                   ["deploy" "releases"]
+                   ["change" "version" "leiningen.release/bump-version" "patch"]
+                   ["vcs" "commit"]
+                   ["vcs" "push" "origin" "main"]]
+
+  :plugins [[s3-wagon-private "1.3.4"]]
+
+  :repositories {"releases" {:url           "s3p://repo.bowerswilkins.net/releases/"
+                             :no-auth       true
+                             :sign-releases false}})
+
