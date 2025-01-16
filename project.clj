@@ -1,4 +1,4 @@
-(defproject audiogum/clj-http-stub "0.0.3"
+(defproject audiogum/clj-http-stub "0.0.4-SNAPSHOT"
   :description "Helper for faking clj-http and http-kit requests in testing"
   :url "https://github.com/bwgroupltd/clj-http-stub"
   :license {:name "MIT License"
